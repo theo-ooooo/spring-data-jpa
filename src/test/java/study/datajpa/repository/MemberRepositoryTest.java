@@ -25,6 +25,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Transactional
@@ -288,5 +289,27 @@ class MemberRepositoryTest {
                 return builder.equal(root.get("username"), username);
             };
         }
+    }
+
+    @Test
+    void projections() {
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+        em.flush();
+        em.clear();
+
+        List<NestedClosedProjection> result = memberRepository.findProjectionsByUsername("m1", NestedClosedProjection.class);
+
+        for (NestedClosedProjection nestedClosedProjection : result) {
+            System.out.println("nestedClosedProjection.getTeam().getName() = " + nestedClosedProjection.getTeam().getName());
+            System.out.println("nestedClosedProjection.getUsername() = " + nestedClosedProjection.getUsername());
+        }
+
+        assertThat(result.size()).isEqualTo(1);
     }
 }
