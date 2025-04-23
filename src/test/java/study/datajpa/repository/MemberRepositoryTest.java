@@ -2,6 +2,8 @@ package study.datajpa.repository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -11,7 +13,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.annotation.Rollback;
+import org.springframework.util.StringUtils;
 import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 import study.datajpa.entity.Team;
@@ -19,6 +23,7 @@ import study.datajpa.entity.Team;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -243,5 +248,45 @@ class MemberRepositoryTest {
     @Test
     void callCustom() {
         memberRepository.findMemberCustom();
+    }
+
+
+    @Test
+    void specBasic() {
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+        em.flush();
+        em.clear();
+
+        //when
+        Specification<Member> spec = MemberSpec.username("m1").and(MemberSpec.teamName("teamA"));
+        List<Member> list = memberRepository.findAll(spec);
+
+        //then
+        assertThat(list.size()).isEqualTo(1);
+    }
+
+    public class MemberSpec {
+        public static Specification<Member> teamName(final String teamName) {
+            return (Specification<Member>) (root, query, builder) -> {
+                if(StringUtils.isEmpty(teamName)) {
+                    return null;
+                }
+
+                Join<Object, Object> t = root.join("team", JoinType.INNER);
+                return builder.equal(t.get("name"), teamName);
+            };
+        }
+        public static Specification<Member> username(final String username) {
+            return (Specification<Member>) (root, query, builder) -> {
+                return builder.equal(root.get("username"), username);
+            };
+        }
     }
 }

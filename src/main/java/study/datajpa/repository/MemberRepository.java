@@ -12,7 +12,7 @@ import study.datajpa.entity.Member;
 
 import java.util.List;
 
-public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom {
+public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom, JpaSpecificationExecutor<Member> {
     List<Member> findByUsernameAndAgeGreaterThan(String username, int age);
 
 //    @Query(name = "Member.findByUsername")
